@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <Version Value="11"/>
+    <BuildModes Active="Default"/>
+    <Units Count="4">
+      <Unit0>
+        <Filename Value="UEFReader.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="MainUnit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="MainForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="50"/>
+        <CursorPos X="14" Y="73"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="../DiscImageReader/DiscImage.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="10"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="../DiscImageReader/MainUnit.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="867"/>
+        <CursorPos X="20" Y="887"/>
+        <UsageCount Value="10"/>
+      </Unit3>
+    </Units>
+    <JumpHistory Count="13" HistoryIndex="12">
+      <Position1>
+        <Filename Value="UEFReader.lpr"/>
+      </Position1>
+      <Position2>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="382" Column="61" TopLine="362"/>
+      </Position2>
+      <Position3>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="361" Column="23" TopLine="346"/>
+      </Position3>
+      <Position4>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="51" Column="38" TopLine="35"/>
+      </Position4>
+      <Position5>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="224" Column="21" TopLine="208"/>
+      </Position5>
+      <Position6>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="236" Column="21" TopLine="220"/>
+      </Position6>
+      <Position7>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="383" Column="28" TopLine="366"/>
+      </Position7>
+      <Position8>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="387" Column="12" TopLine="370"/>
+      </Position8>
+      <Position9>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="346" Column="19" TopLine="317"/>
+      </Position9>
+      <Position10>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="9" Column="40"/>
+      </Position10>
+      <Position11>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="313" Column="29" TopLine="302"/>
+      </Position11>
+      <Position12>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="9" Column="49"/>
+      </Position12>
+      <Position13>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="429" Column="35" TopLine="411"/>
+      </Position13>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes Count="0" ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
