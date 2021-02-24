@@ -4,7 +4,7 @@ object MainForm: TMainForm
   Top = 22
   Width = 754
   AllowDropFiles = True
-  Caption = 'UEF Reader 1.00 by Gerald J Holdsworth'
+  Caption = 'UEF Reader 1.01 by Gerald J Holdsworth'
   ClientHeight = 856
   ClientWidth = 754
   Color = 14737632

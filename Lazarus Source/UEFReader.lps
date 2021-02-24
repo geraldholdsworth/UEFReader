@@ -7,7 +7,7 @@
       <Unit0>
         <Filename Value="UEFReader.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="20"/>
+        <UsageCount Value="48"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
@@ -18,26 +18,26 @@
         <ResourceBaseClass Value="Form"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="50"/>
-        <CursorPos X="14" Y="73"/>
-        <UsageCount Value="20"/>
+        <TopLine Value="459"/>
+        <CursorPos X="5" Y="492"/>
+        <UsageCount Value="48"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="../DiscImageReader/DiscImage.pas"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="7"/>
       </Unit2>
       <Unit3>
         <Filename Value="../DiscImageReader/MainUnit.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="867"/>
         <CursorPos X="20" Y="887"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="7"/>
       </Unit3>
     </Units>
-    <JumpHistory Count="13" HistoryIndex="12">
+    <JumpHistory Count="16" HistoryIndex="15">
       <Position1>
         <Filename Value="UEFReader.lpr"/>
       </Position1>
@@ -89,10 +89,37 @@
         <Filename Value="MainUnit.pas"/>
         <Caret Line="429" Column="35" TopLine="411"/>
       </Position13>
+      <Position14>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="404" Column="57" TopLine="383"/>
+      </Position14>
+      <Position15>
+        <Filename Value="MainUnit.pas"/>
+        <Caret Line="282" Column="59" TopLine="236"/>
+      </Position15>
+      <Position16>
+        <Filename Value="MainUnit.pas"/>
+        <Caret TopLine="136"/>
+      </Position16>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes Count="0" ActiveMode=""/>
     </RunParams>
   </ProjectSession>
+  <Debugging>
+    <Watches Count="3">
+      <Item1>
+        <Expression Value="blockst"/>
+        <DisplayStyle Value="wdfHex"/>
+      </Item1>
+      <Item2>
+        <Expression Value="filenum"/>
+      </Item2>
+      <Item3>
+        <Expression Value="chunkid"/>
+        <DisplayStyle Value="wdfHex"/>
+      </Item3>
+    </Watches>
+  </Debugging>
 </CONFIG>

@@ -47,6 +47,7 @@ type
    procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
    procedure ReadUEFFile(source: String);
    function BlockStatus(status: Byte): String;
+   function TargetMachine(machine: Byte): String;
    function GetCRC16(start,length: Cardinal;var buffer: TDynByteArray): Cardinal;
    function GetCRC32(var buffer: TDynByteArray): String;
    function Inflate(source: String): TDynByteArray;
@@ -164,6 +165,12 @@ begin
    lb_chunkDesc.Caption:='';
    line:='0x'+IntToHex(pos,10)+' 0x'+IntToHex(chunkid,4)
                               +' 0x'+IntToHex(chunklen,8);
+   //Was the last data block seen the last block of the file?
+   if blockst AND$80=$80 then
+   begin
+    inc(filenum);
+    blockst:=0;
+   end;
    //Move on after the header
    inc(pos,6);
    //Decode the chunk
@@ -175,6 +182,11 @@ begin
      for i:=0 to chunklen-1 do
       if(buffer[pos+i]>31)and(buffer[pos+i]<127)then temp:=temp+chr(buffer[pos+i]);
      line:=line+' Created by '+temp;
+    end;
+    $0005 : //Target Machine Type ++++++++++++++++++++++++++++++++++++++++++++++
+    begin
+     lb_chunkDesc.Caption:='Target Machine Type';
+     line:=line+' Target Machine is '+TargetMachine(buffer[pos]);
     end;
     $0100 : //Implicit Start/Stop Bit Tape Data Block ++++++++++++++++++++++++++
     begin
@@ -217,6 +229,7 @@ begin
                               +buffer[pos+i+7]*$1000000;
       //Read in the block number
       blocknum:=buffer[pos+i+8]+buffer[pos+i+9]*$100;
+      line:=line+' #'+IntToHex(blocknum,4);
       //Take a note of where we are in the file's data, as we build it up
       ptr:=files[filenum].Length;
       //Get the length of this block
@@ -259,18 +272,18 @@ begin
     begin
      lb_chunkDesc.Caption:='High Tone';
      //Work out the length of the tone
-     tone:=(buffer[pos]+buffer[pos+1]*$100)*(1/(baud*2));
+     tone:=(buffer[pos]+buffer[pos+1]*$100)*(1/(baud*2))*8;
      line:=line+' HighTone: '+FloatToStr(tone)+'s';
     end;
     $0112 : //Baudwise Gap +++++++++++++++++++++++++++++++++++++++++++++++++++++
     begin
      lb_chunkDesc.Caption:='Baudwise Gap';
      //Work out the length of the gap
-     tone:=(buffer[pos]+buffer[pos+1]*$100)*(1/(baud*2));
+     tone:=(buffer[pos]+buffer[pos+1]*$100)*(1/(baud*2))*8;
      line:=line+' Baudwise Gap: '+FloatToStr(tone)+'s';
      //This is generally a gap between files, so we'll up our file counter
-     if blockst AND $80=$80 then
-      inc(filenum);//But only if the last block was the last of the file
+     //if blockst AND $80=$80 then
+     // inc(filenum);//But only if the last block was the last of the file
     end;
     else //Unknown chunk +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     begin
@@ -385,6 +398,21 @@ begin
  if status AND $01=$01 then Result:=Result+'Locked ';
  if status AND $40=$40 then Result:=Result+'Zero length ';
  if status AND $80=$80 then Result:=Result+'Final block';
+end;
+
+{-------------------------------------------------------------------------------
+Convert the target machine byte into a human readable string
+-------------------------------------------------------------------------------}
+function TMainForm.TargetMachine(machine: Byte): String;
+begin
+ Result:='not specified ('+IntToHex(machine,2)+')';
+ case machine and 7 of
+  0: Result:='BBC Model A';
+  1: Result:='Acorn Electron';
+  2: Result:='BBC Model B';
+  3: Result:='BBC Master';
+  4: Result:='Acorn Atom';
+ end;
 end;
 
 {-------------------------------------------------------------------------------

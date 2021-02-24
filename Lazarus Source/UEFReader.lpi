@@ -3,9 +3,6 @@
   <ProjectOptions>
     <Version Value="11"/>
     <General>
-      <Flags>
-        <UseDefaultCompilerOptions Value="True"/>
-      </Flags>
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
       <Title Value="UEF Reader"/>
@@ -20,8 +17,9 @@
     <VersionInfo>
       <UseVersionInfo Value="True"/>
       <MajorVersionNr Value="1"/>
+      <MinorVersionNr Value="1"/>
       <Language Value="0809"/>
-      <StringTable CompanyName="GJH Software" FileDescription="UEF Reader" ProductName="UEF Reader" ProductVersion="1.00"/>
+      <StringTable CompanyName="GJH Software" FileDescription="UEF Reader" ProductName="UEF Reader" ProductVersion="1.01"/>
     </VersionInfo>
     <BuildModes Count="6">
       <Item1 Name="Default" Default="True"/>
