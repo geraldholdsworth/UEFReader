@@ -1,18 +1,18 @@
 object MainForm: TMainForm
   Left = 686
-  Height = 856
-  Top = 22
+  Height = 855
+  Top = 23
   Width = 754
   AllowDropFiles = True
-  Caption = 'UEF Reader 1.01 by Gerald J Holdsworth'
-  ClientHeight = 856
+  Caption = 'UEF Reader 1.02 by Gerald J Holdsworth'
+  ClientHeight = 855
   ClientWidth = 754
   Color = 14737632
   OnDropFiles = FormDropFiles
-  LCLVersion = '2.0.11.0'
+  LCLVersion = '2.0.12.0'
   object Report: TMemo
     Left = 0
-    Height = 656
+    Height = 655
     Top = 24
     Width = 754
     Align = alClient
@@ -42,7 +42,7 @@ object MainForm: TMainForm
   object Panel2: TPanel
     Left = 0
     Height = 176
-    Top = 680
+    Top = 679
     Width = 754
     Align = alBottom
     Alignment = taLeftJustify

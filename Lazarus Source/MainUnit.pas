@@ -6,7 +6,7 @@ interface
 
 uses
  Classes,SysUtils,Forms,Controls,Graphics,Dialogs,ExtCtrls,StdCtrls,Buttons,
- ComCtrls,ZStream,crc,Global,StrUtils;
+ ComCtrls,ZStream,crc,Global,StrUtils,Math;
 
 type
   TDynByteArray = Array of Byte;
@@ -51,6 +51,7 @@ type
    function GetCRC16(start,length: Cardinal;var buffer: TDynByteArray): Cardinal;
    function GetCRC32(var buffer: TDynByteArray): String;
    function Inflate(source: String): TDynByteArray;
+   function GetIEEEFloat(input: Cardinal): Real;
   private
 
   public
@@ -86,8 +87,9 @@ var
  F        : TFileStream;
  buffer   : TDynByteArray;
  i,j      : Integer;
+ baud     : Real;
  filenum,
- baud,
+ phase,
  unk,
  pos,
  chunkid,
@@ -111,6 +113,7 @@ begin
  unk:=0;
  SetLength(files,0);
  baud:=1200; //Default baud rate
+ phase:=180;
  //Reset the controls
  Report.Clear; //The reading of the file would actually go quicker without these
  FileLoader.Clear; //being updated as it read.
@@ -273,7 +276,15 @@ begin
      lb_chunkDesc.Caption:='High Tone';
      //Work out the length of the tone
      tone:=(buffer[pos]+buffer[pos+1]*$100)*(1/(baud*2))*8;
-     line:=line+' HighTone: '+FloatToStr(tone)+'s';
+     line:=line+' High Tone: '+FloatToStr(tone)+'s';
+    end;
+    $0111 : //High Tone with dummy byte ++++++++++++++++++++++++++++++++++++++++
+    begin
+     lb_chunkDesc.Caption:='High Tone with dummy byte';
+     //Work out the length of the tone
+     tone:=(buffer[pos]+buffer[pos+1]*$100)*(1/(baud*2))*8;
+     line:=line+' High Tone with dummy byte: '+FloatToStr(tone)+'s and '+
+           FloatToStr((buffer[pos+2]+buffer[pos+3]*$100)*(1/(baud*2))*8)+'s';
     end;
     $0112 : //Baudwise Gap +++++++++++++++++++++++++++++++++++++++++++++++++++++
     begin
@@ -281,9 +292,40 @@ begin
      //Work out the length of the gap
      tone:=(buffer[pos]+buffer[pos+1]*$100)*(1/(baud*2))*8;
      line:=line+' Baudwise Gap: '+FloatToStr(tone)+'s';
-     //This is generally a gap between files, so we'll up our file counter
-     //if blockst AND $80=$80 then
-     // inc(filenum);//But only if the last block was the last of the file
+    end;
+    $0113 : //Change of baud rate ++++++++++++++++++++++++++++++++++++++++++++++
+    begin
+     lb_chunkDesc.Caption:='Change of baud rate';
+     //Work out the new baud rate
+     baud:=GetIEEEFloat(buffer[pos]
+                       +buffer[pos+1]*$100
+                       +buffer[pos+2]*$10000
+                       +buffer[pos+3]*$1000000);
+     line:=line+' Change of baud rate: '+FloatToStr(baud);
+    end;
+    $0114 : //Security wave ++++++++++++++++++++++++++++++++++++++++++++++++++++
+    begin
+     lb_chunkDesc.Caption:='Security wave';
+     line:=line+' Security wave: '+IntToStr(buffer[pos]
+                                           +buffer[pos+1]*$100
+                                           +buffer[pos+2]*$10000)
+               +' waves ('+chr(buffer[pos+3])+chr(buffer[pos+4])+')';
+    end;
+    $0115 : //Phase Change +++++++++++++++++++++++++++++++++++++++++++++++++++++
+    begin
+     lb_chunkDesc.Caption:='Phase Change';
+     phase:=buffer[pos]+buffer[pos+1]*$100;
+     line:=line+' Phase Change: '+IntToStr(phase);
+    end;
+    $0116 : //Floating point gap +++++++++++++++++++++++++++++++++++++++++++++++
+    begin
+     lb_chunkDesc.Caption:='Floating point gap';
+     //Work out the length of the gap
+     tone:=GetIEEEFloat(buffer[pos]
+                       +buffer[pos+1]*$100
+                       +buffer[pos+2]*$10000
+                       +buffer[pos+3]*$1000000);
+     line:=line+' Floating point gap: '+FloatToStr(tone)+'s';
     end;
     else //Unknown chunk +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     begin
@@ -456,37 +498,126 @@ end;
 Load, and inflate if it is GZipped, a UEF file
 -------------------------------------------------------------------------------}
 function TMainForm.Inflate(Source: String): TDynByteArray;
+ function L_Inflate(Source: String): TDynByteArray;
+ var
+  GZ     : TGZFileStream;
+  chunk  : TDynByteArray;
+  cnt,
+  i,
+  buflen : Integer;
+ const
+   ChunkSize=4096; //4K chunks
+ begin
+  //Initialise the variables
+  Result:=nil;
+  chunk:=nil;
+  //Open the stream
+  try
+   GZ:=TGZFileStream.Create(Source,gzOpenRead);
+   //This is our length counter
+   buflen:=0;
+   //We'll be reading it in chunks
+   SetLength(chunk,ChunkSize);
+   repeat
+    //Read in the next chunk
+    cnt:=GZ.Read(chunk[0],ChunkSize);
+    //Extend the buffer accordingly
+    SetLength(Result,buflen+cnt);
+    //Copy the chunk into the buffer
+    for i:=0 to cnt-1 do Result[buflen+i]:=chunk[i];
+    //Increase the buffer length counter
+    inc(buflen,cnt);
+    //Until we are done
+   until cnt<ChunkSize;
+   //Free up the stream
+  except
+  end;
+  GZ.Free;
+ end;
 var
- GZ     : TGZFileStream;
- chunk  : array of Byte;
- cnt,
- i,
- buflen : Integer;
-const
-  ChunkSize=4096; //4K chunks
+ F        : TFileStream;
+ buffer,
+ inflated : TDynByteArray;
+ ptr,i,old: Cardinal;
+ blockptrs: array of Cardinal;
+ fn       : String;
 begin
- //Initialise the variables
- Result:=nil;
- chunk:=nil;
- //Open the stream
- GZ:=TGZFileStream.Create(Source,gzOpenRead);
- //This is our length counter
- buflen:=0;
- //We'll be reading it in chunks
- SetLength(chunk,ChunkSize);
- repeat
-  //Read in the next chunk
-  cnt:=GZ.Read(chunk[0],ChunkSize);
-  //Extend the buffer accordingly
-  SetLength(Result,buflen+cnt);
-  //Copy the chunk into the buffer
-  for i:=0 to cnt-1 do Result[buflen+i]:=chunk[i];
-  //Increase the buffer length counter
-  inc(buflen,cnt);
-  //Until we are done
- until cnt<ChunkSize;
- //Free up the stream
- GZ.Free;
+ buffer   :=nil;
+ blockptrs:=nil;
+ inflated :=nil;
+ Result   :=nil;
+ //Read in the entire file
+ try
+  F:=TFileStream.Create(Source,fmOpenRead or fmShareDenyNone);
+  SetLength(buffer,F.Size);
+  F.Read(buffer[0],F.Size);
+ except
+ end;
+ F.Free;
+ //Count how many blocks and make note of their positions
+ for ptr:=0 to Length(buffer)-10 do
+  if(buffer[ptr]=$1F)and(buffer[ptr+1]=$8B)and(buffer[ptr+2]=$08)then
+  begin
+   //Make a note of the position
+   SetLength(blockptrs,Length(blockptrs)+1);
+   blockptrs[Length(blockptrs)-1]:=ptr;
+  end;
+ //Separate each block, if more than one
+ if Length(blockptrs)>1 then
+ begin
+  //Add the file end to the end of the block pointers
+  SetLength(blockptrs,Length(blockptrs)+1);
+  blockptrs[Length(blockptrs)-1]:=Length(buffer);
+  //Set up the container for the inflated file
+  SetLength(Result,0);
+  //Get a temporary filename
+  fn:=GetTempDir+ExtractFileName(Source);
+  //Iterate through the pointers
+  for i:=0 to Length(blockptrs)-2 do
+  begin
+   //Create the temporary file and write the block to it
+   try
+    F:=TFileStream.Create(fn,fmCreate);
+    F.Write(buffer[blockptrs[i]],blockptrs[i+1]-blockptrs[i]);
+   except
+   end;
+   F.Free;
+   //Inflate the block
+   inflated:=L_Inflate(fn);
+   old:=Length(Result); //Previous length of the inflated file
+   //Increase the inflated file buffer to accomodate
+   SetLength(Result,Length(Result)+Length(inflated));
+   //Move the inflated data across
+   for ptr:=0 to Length(inflated)-1 do Result[old+ptr]:=inflated[ptr];
+  end;
+  //Delete the temporary file
+  if FileExists(fn) then DeleteFile(fn);
+ end;
+ //If just the one block, then don't bother splitting
+ if Length(blockptrs)=1 then Result:=L_Inflate(Source);
+ //If there are no blocks, then just return the entire file
+ if Length(blockptrs)=0 then Result:=buffer;
+end;
+
+{-------------------------------------------------------------------------------
+Calculates an IEEE flost from 32 bit number
+-------------------------------------------------------------------------------}
+function TMainForm.GetIEEEFloat(input: Cardinal): Real;
+var
+ f0,f1,f2,f3 : Byte;
+ m,e         : Cardinal;
+begin
+ Result:=0;
+ f3:=(input shr 24)mod$100;
+ f2:=(input shr 16)mod$100;
+ f1:=(input shr  8)mod$100;
+ f0:= input        mod$100;
+ m:=f0 or (f1 shl 8) or (((f2 and$7F)or$80)shl 16);
+ Result:=ldexp(m,-23);
+ e:=((f2 and$80)shr 7)or((f3 and$7F)shl 1);
+ e:=e-127;//dec(e,127);
+ Result:=ldexp(Result,e);
+ if (f3 and$80)=$80 then Result:=-Result;
 end;
 
 end.
