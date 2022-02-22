@@ -5,7 +5,7 @@ unit MainUnit;
 interface
 
 uses
- Classes,SysUtils,Forms,Controls,Graphics,Dialogs,ExtCtrls,StdCtrls,Buttons,
+ Classes,SysUtils,Forms,Controls,Dialogs,ExtCtrls,StdCtrls,Buttons,
  ComCtrls,ZStream,crc,Global,StrUtils,Math;
 
 type
@@ -50,7 +50,7 @@ type
    function TargetMachine(machine: Byte): String;
    function GetCRC16(start,length: Cardinal;var buffer: TDynByteArray): Cardinal;
    function GetCRC32(var buffer: TDynByteArray): String;
-   function Inflate(source: String): TDynByteArray;
+   function Inflate(source: String;var IsInflated: Boolean): TDynByteArray;
    function GetIEEEFloat(input: Cardinal): Real;
   private
 
@@ -96,9 +96,12 @@ var
  chunklen,
  blocklen,
  blocknum,
+ lastblock,
  ptr,
  headcrc,
  datacrc  : Cardinal;
+ firstblock,
+ IsGZip,
  ok       : Boolean;
  temp,
  line     : String;
@@ -114,6 +117,7 @@ begin
  SetLength(files,0);
  baud:=1200; //Default baud rate
  phase:=180;
+ IsGZip:=False;
  //Reset the controls
  Report.Clear; //The reading of the file would actually go quicker without these
  FileLoader.Clear; //being updated as it read.
@@ -128,7 +132,8 @@ begin
  //Begin the report
  Report.Lines.Add('File: "'+source+'"'); //Put the filename in as the first line
  //Open the file
- buffer:=Inflate(source);
+ buffer:=Inflate(source,IsGzip);
+ if(IsGZip)then Report.Lines.Add('File is GZipped');
  Report.Lines.Add('Total uncompressed file length: '
                 +IntToStr(Length(buffer))+' bytes (0x'
                 +IntToHex(Length(buffer),10)+')');
@@ -143,6 +148,9 @@ begin
   Report.Lines.Add('File is a UEF file');
   Report.Lines.Add('UEF version: '+IntToStr(buffer[$0A])+'.'+IntToStr(buffer[$0B]));
   Report.Lines.Add('');
+  //Keep track of the last block's details
+  lastblock:=0;
+  firstblock:=True;
   //Starting position is after the magic string
   pos:=$0C;
   //Keep track of which file we are on
@@ -218,21 +226,34 @@ begin
        files[filenum].Filename:=temp;   //Filename
        files[filenum].Offset  :=pos-6;  //Where to find it (first block)
        SetLength(files[filenum].Data,0);//Clear the data
-       FileLoader.Lines.Add(temp);
-      end;
-      //Read in the load address
-      files[filenum].LoadAddr:=buffer[pos+i]
-                              +buffer[pos+i+1]*$100
-                              +buffer[pos+i+2]*$10000
-                              +buffer[pos+i+3]*$1000000;
-      //Read in the execution address
-      files[filenum].ExecAddr:=buffer[pos+i+4]
-                              +buffer[pos+i+5]*$100
-                              +buffer[pos+i+6]*$10000
-                              +buffer[pos+i+7]*$1000000;
+       firstblock:=True;
+       //Read in the load address
+       files[filenum].LoadAddr:=buffer[pos+i]
+                               +buffer[pos+i+1]*$100
+                               +buffer[pos+i+2]*$10000
+                               +buffer[pos+i+3]*$1000000;
+       //Read in the execution address
+       files[filenum].ExecAddr:=buffer[pos+i+4]
+                               +buffer[pos+i+5]*$100
+                               +buffer[pos+i+6]*$10000
+                               +buffer[pos+i+7]*$1000000;
+      end else firstblock:=False;
       //Read in the block number
       blocknum:=buffer[pos+i+8]+buffer[pos+i+9]*$100;
       line:=line+' #'+IntToHex(blocknum,4);
+      //Is it a new block, or copy protection?
+      if(blocknum>0)and(firstblock)and(Length(files)>1)then
+       if (lastblock=blocknum-1)
+       and(files[filenum-1].Filename=files[filenum].Filename)
+       {and(files[filenum-1].LoadAddr=files[filenum].LoadAddr)
+       and(files[filenum-1].ExecAddr=files[filenum].ExecAddr)}then
+       begin
+        SetLength(files,Length(files)-1);
+        dec(filenum);
+        firstblock:=False;
+       end;
+      lastblock:=blocknum;
+      if firstblock then FileLoader.Lines.Add(files[filenum].Filename);
       //Take a note of where we are in the file's data, as we build it up
       ptr:=files[filenum].Length;
       //Get the length of this block
@@ -241,6 +262,7 @@ begin
       inc(files[filenum].Length,blocklen);
       //Get the block status
       blockst:=buffer[pos+i+12];
+      line:=line+' Status: '+IntToHex(blockst,2);
       //Get the CRC16 value for the header
       headcrc:=buffer[pos+i+17]+buffer[pos+i+18]*$100;
       //Check it is valid
@@ -497,7 +519,7 @@ end;
 {-------------------------------------------------------------------------------
 Load, and inflate if it is GZipped, a UEF file
 -------------------------------------------------------------------------------}
-function TMainForm.Inflate(Source: String): TDynByteArray;
+function TMainForm.Inflate(Source: String;var IsInflated: Boolean): TDynByteArray;
  function L_Inflate(Source: String): TDynByteArray;
  var
   GZ     : TGZFileStream;
@@ -554,14 +576,18 @@ begin
  except
  end;
  F.Free;
- //Count how many blocks and make note of their positions
- for ptr:=0 to Length(buffer)-10 do
-  if(buffer[ptr]=$1F)and(buffer[ptr+1]=$8B)and(buffer[ptr+2]=$08)then
-  begin
-   //Make a note of the position
-   SetLength(blockptrs,Length(blockptrs)+1);
-   blockptrs[Length(blockptrs)-1]:=ptr;
-  end;
+ //First, is it actually a GZip file?
+ if(buffer[$00]=$1F)and(buffer[$01]=$8B)and(buffer[$02]=$08)then
+ begin
+  //Count how many blocks and make note of their positions
+  for ptr:=0 to Length(buffer)-10 do
+   if(buffer[ptr]=$1F)and(buffer[ptr+1]=$8B)and(buffer[ptr+2]=$08)then
+   begin
+    //Make a note of the position
+    SetLength(blockptrs,Length(blockptrs)+1);
+    blockptrs[Length(blockptrs)-1]:=ptr;
+   end;
+ end;
  //Separate each block, if more than one
  if Length(blockptrs)>1 then
  begin
@@ -597,6 +623,7 @@ begin
  if Length(blockptrs)=1 then Result:=L_Inflate(Source);
  //If there are no blocks, then just return the entire file
  if Length(blockptrs)=0 then Result:=buffer;
+ IsInflated:=Length(buffer)<>Length(Result);
 end;
 
 {-------------------------------------------------------------------------------

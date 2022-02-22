@@ -15,7 +15,7 @@ uses
 begin
   RequireDerivedFormResource:=True;
  Application.Title:='UEF Reader';
-  Application.Scaled:=True;
+ Application.Scaled:=True;
   Application.Initialize;
  Application.CreateForm(TMainForm, MainForm);
   Application.Run;
